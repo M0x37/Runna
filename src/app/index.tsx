@@ -1,98 +1,69 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import { Link, useFocusEffect } from 'expo-router';
+import { RouteCard } from '@/components/RouteCard';
+import { loadRoutes } from '@/lib/storage';
+import { SavedRoute } from '@/lib/types';
 
 export default function HomeScreen() {
+  const [routes, setRoutes] = useState<SavedRoute[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      loadRoutes()
+        .then(list => active && setRoutes(list))
+        .catch(e => {
+          if (!active) return;
+          setError(e instanceof Error ? e.message : 'Routen konnten nicht geladen werden.');
+          setRoutes([]);
+        })
+        .finally(() => active && setLoaded(true));
+      return () => {
+        active = false;
+      };
+    }, [])
+  );
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+    <View className="flex-1 bg-stravaDark">
+      <View className="p-4 border-b border-stravaBorder bg-stravaCard">
+        <Text className="text-2xl font-display-extrabold text-white">Meine Routen</Text>
+        <Text className="text-sm mt-1 text-stravaMuted">
+          Gespeicherte Laufstrecken werden in der Supabase-Datenbank abgelegt.
+        </Text>
+        <Link href="/new-route" asChild>
+          <Pressable className="mt-4 bg-strava rounded-xl py-3 items-center active:opacity-80">
+            <Text className="text-white font-sans-bold text-base">Neue Route planen</Text>
+          </Pressable>
+        </Link>
+      </View>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+      {!loaded ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#FC4C02" />
+        </View>
+      ) : error ? (
+        <View className="flex-1 items-center justify-center px-8">
+          <Text className="text-center text-base text-stravaMuted">{error}</Text>
+        </View>
+      ) : routes.length === 0 ? (
+        <View className="flex-1 items-center justify-center px-8">
+          <Text className="text-center text-base text-stravaMuted">
+            Noch keine Routen gespeichert. Plane deine erste Laufstrecke über den Button oben.
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          className="flex-1"
+          contentContainerClassName="p-4 gap-3"
+          data={routes}
+          keyExtractor={r => r.id}
+          renderItem={({ item }) => <RouteCard route={item} />}
+        />
+      )}
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
-});

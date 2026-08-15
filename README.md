@@ -1,56 +1,103 @@
-# Welcome to your Expo app 👋
+# Runna – Laufstrecken-Planer
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Single-User-App zum Planen von Laufstrecken: Startpunkt + Distanz eingeben, die App
+generiert über die [openrouteservice](https://openrouteservice.org)-API (`foot-walking`,
+`round_trip`) eine Rundstrecke, die nur für Fußgänger geeignete Wege nutzt. Die Route wird
+auf einer Karte angezeigt und lokal gespeichert.
 
-## Get started
+Läuft aus **einer** Expo-Codebasis als Website (PC) und als Android-APK.
 
-1. Install dependencies
+## Kosten
 
-   ```bash
-   npm install
-   ```
+**Alles für immer kostenlos – kein Abo, kein API-Key, keine Kreditkarte:**
 
-2. Start the app
+| Komponente | Lösung | Kosten |
+|---|---|---|
+| Routen-Generierung | openrouteservice (kostenloser Account) | gratis, Tageslimit |
+| Karte Android | MapLibre (Open-Source, BSD) + OpenFreeMap-Kacheln | gratis |
+| Karte Web | Leaflet + OpenStreetMap | gratis |
+| Speicherung | Supabase (kostenloser Plan: 500 MB DB) | gratis, keine Kreditkarte |
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Setup
 
 ```bash
-npm run reset-project
+npm install
+cp .env.example .env   # ORS-Key + Supabase-Zugangsdaten eintragen
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+| Variable | Zweck | Bezugsquelle |
+|---|---|---|
+| `EXPO_PUBLIC_ORS_KEY` | openrouteservice-Routen (Round-Trip) | https://openrouteservice.org/dev/dashboard/ (kostenlos) |
+| `EXPO_PUBLIC_SUPABASE_URL` | Supabase-Projekt-URL | Supabase-Dashboard → Project Settings → API |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Supabase-Anon-Key | Supabase-Dashboard → Project Settings → API |
 
-### Other setup steps
+### Supabase einrichten
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+1. Konto auf https://supabase.com erstellen (kostenlos, keine Kreditkarte) → **New project**.
+2. In Project Settings → **API** die `Project URL` und den `anon public`-Key in die `.env` eintragen.
+3. Im **SQL Editor** den Inhalt von `supabase/schema.sql` ausführen (legt die Tabelle `routes`
+   samt Zugriffsregeln an).
 
-## Learn more
+Ohne `EXPO_PUBLIC_ORS_KEY` zeigt die App eine verständliche Fehlermeldung.
+Für die Karten selbst wird kein Key benötigt.
 
-To learn more about developing your project with Expo, look at the following resources:
+## Entwicklung
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npm run web        # Web (Metro, http://localhost:8081)
+npx expo start     # Android im Dev-Build (siehe unten; Expo Go funktioniert NICHT, s. Hinweis)
+npm run typecheck
+npm run lint
+```
 
-## Join the community
+## Karten-Plattform-Split
 
-Join our community of developers creating universal apps.
+Metro lädt je Plattform automatisch:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- `src/components/Map/Map.native.tsx` – MapLibre + OpenFreeMap (iOS/Android)
+- `src/components/Map/Map.web.tsx` – `react-leaflet` + OpenStreetMap (Browser)
+
+Import bleibt überall gleich: `import { Map } from '@/components/Map/Map'`.
+
+## Builds
+
+```bash
+# Android-APK (Preview-Profil, lokal herunterladbar) – enthält die Karte
+npm run build:android        # entspricht: eas build -p android --profile preview
+
+# Website (statischer Export nach dist/, z. B. auf Vercel/Netlify hosten)
+npm run export:web           # entspricht: npx expo export -p web
+```
+
+Für den Android-Build wird ein EAS-Account benötigt (`npx eas-cli login`).
+
+## Hinweise
+
+- **Kein Expo Go:** MapLibre ist ein nativer Modul und läuft nicht in Expo Go –
+  getestet wird über einen Development Build (`eas build --profile development`)
+  oder direkt das Preview-APK.
+- Kein Login, kein Live-Tracking: Routen liegen in einer Supabase-Datenbank (kostenloser
+  Plan). Für eine rein private App reicht das; bei öffentlicher Verteilung besser Login +
+  Row-Level-Security ergänzen (Schema dafür in `supabase/schema.sql` vorbereitet).
+- Der openrouteservice-Key liegt im Client – für eine rein private App okay; für
+  öffentliche Verteilung besser über eine Serverless-Function proxyen (siehe plan.md).
+- GPX-Export ist bewusst nur im Web verfügbar (Download in Strava/Garmin importierbar).
+
+## Struktur
+
+```
+src/
+  app/
+    index.tsx              # Liste gespeicherter Routen
+    new-route.tsx          # Startpunkt wählen + km eingeben + generieren
+    route/[id].tsx         # Kartenansicht, speichern/löschen/neu generieren, GPX-Export (Web)
+  components/
+    Map/                   # Plattform-Split (native/web)
+    RouteCard.tsx
+  lib/
+    routing.ts             # openrouteservice-Anbindung
+    storage.ts             # Supabase-Helper (Tabelle 'routes')
+    gpx.ts                 # GPX-Export
+  stores/
+    useRouteStore.ts       # Zustand (Draft der zu generierenden Route)
+```
