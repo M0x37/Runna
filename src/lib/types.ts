@@ -10,4 +10,5 @@ export interface SavedRoute {
   createdAt: string;
   start: LatLng;
   coords: LatLng[];
+  favorite?: boolean;
 }

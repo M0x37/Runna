@@ -10,14 +10,14 @@ import {
 } from '@maplibre/maplibre-react-native';
 import { MapProps } from './Map.types';
 
-// OpenFreeMap: kostenlos für immer, kein API-Key, OSM-Daten
 const MAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
 
-const toLngLat = (p: { lat: number; lng: number }) => [p.lng, p.lat] as [number, number];
+const toLngLat = (point: { lat: number; lng: number }) => [point.lng, point.lat] as [number, number];
 
-export function Map({ route, startPoint, onMapPress }: MapProps) {
+export function Map({ route, startPoint, livePosition, onMapPress }: MapProps) {
   const cameraRef = useRef<CameraRef>(null);
   const lastStartKey = useRef<string | null>(null);
+  const lastLiveKey = useRef<string | null>(null);
 
   useEffect(() => {
     if (!startPoint) return;
@@ -28,22 +28,42 @@ export function Map({ route, startPoint, onMapPress }: MapProps) {
   }, [startPoint]);
 
   useEffect(() => {
+    if (!livePosition) return;
+    const key = `${livePosition.lat.toFixed(4)},${livePosition.lng.toFixed(4)}`;
+    if (lastLiveKey.current === key) return;
+    lastLiveKey.current = key;
+    cameraRef.current?.flyTo({ center: toLngLat(livePosition), zoom: 16, duration: 600 });
+  }, [livePosition]);
+
+  useEffect(() => {
     if (route.length < 2) return;
-    const lats = route.map(p => p.lat);
-    const lngs = route.map(p => p.lng);
+    const lats = route.map(point => point.lat);
+    const lngs = route.map(point => point.lng);
     cameraRef.current?.fitBounds(
       [Math.min(...lngs), Math.min(...lats), Math.max(...lngs), Math.max(...lats)],
       { padding: { top: 64, right: 48, bottom: 64, left: 48 }, duration: 400 }
     );
   }, [route]);
 
+  const routeData = {
+    type: 'FeatureCollection' as const,
+    features: [
+      {
+        type: 'Feature' as const,
+        properties: {},
+        geometry: {
+          type: 'LineString' as const,
+          coordinates: route.map(toLngLat),
+        },
+      },
+    ],
+  };
+
   return (
     <MapLibreMap
       style={{ flex: 1 }}
       mapStyle={MAP_STYLE}
-      onPress={e =>
-        onMapPress?.({ lat: e.nativeEvent.lngLat[1], lng: e.nativeEvent.lngLat[0] })
-      }
+      onPress={event => onMapPress?.({ lat: event.nativeEvent.lngLat[1], lng: event.nativeEvent.lngLat[0] })}
     >
       <Camera
         ref={cameraRef}
@@ -54,33 +74,29 @@ export function Map({ route, startPoint, onMapPress }: MapProps) {
         }
       />
       {route.length > 0 && (
-        <GeoJSONSource
-          id="route-source"
-          data={{
-            type: 'FeatureCollection',
-            features: [
-              {
-                type: 'Feature',
-                properties: {},
-                geometry: {
-                  type: 'LineString',
-                  coordinates: route.map(toLngLat),
-                },
-              },
-            ],
-          }}
-        >
+        <GeoJSONSource id="route-source" data={routeData}>
+          <Layer
+            id="route-halo"
+            type="line"
+            source="route-source"
+            paint={{ 'line-color': '#080808', 'line-width': 10, 'line-opacity': 0.45, 'line-blur': 1.2 }}
+          />
           <Layer
             id="route-line"
             type="line"
             source="route-source"
-            paint={{ 'line-color': '#FC4C02', 'line-width': 4 }}
+            paint={{ 'line-color': '#D8FF39', 'line-width': 5, 'line-opacity': 0.98 }}
           />
         </GeoJSONSource>
       )}
       {startPoint && (
         <Marker id="start" lngLat={toLngLat(startPoint)} anchor="bottom">
-          <View className="w-6 h-6 rounded-full bg-blue-600 border-2 border-white shadow-lg" />
+          <View className="h-7 w-7 rounded-full border-[3px] border-white bg-lime shadow-lg" />
+        </Marker>
+      )}
+      {livePosition && (
+        <Marker id="live" lngLat={toLngLat(livePosition)} anchor="center">
+          <View className="h-6 w-6 rounded-full border-[4px] border-white bg-orange" />
         </Marker>
       )}
     </MapLibreMap>

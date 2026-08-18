@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   Text,
   TextInput,
   View,
@@ -21,6 +22,8 @@ interface NominatimResult {
   lat: string;
   lon: string;
 }
+
+const DISTANCE_PRESETS = ['3', '5', '8', '10'];
 
 export default function NewRouteScreen() {
   const draft = useRouteStore(s => s.draft);
@@ -71,9 +74,7 @@ export default function NewRouteScreen() {
       if (!res.ok) throw new Error(`Nominatim Fehler: ${res.status}`);
       const data: NominatimResult[] = await res.json();
       setResults(data);
-      if (data.length === 0) {
-        Alert.alert('Nichts gefunden', `Zu „${q}" wurde keine Adresse gefunden.`);
-      }
+      if (data.length === 0) Alert.alert('Nichts gefunden', `Zu „${q}" wurde keine Adresse gefunden.`);
     } catch {
       Alert.alert('Fehler', 'Adresssuche fehlgeschlagen. Versuche es erneut.');
     } finally {
@@ -81,8 +82,8 @@ export default function NewRouteScreen() {
     }
   }
 
-  function pickResult(r: NominatimResult) {
-    setDraftStart({ lat: parseFloat(r.lat), lng: parseFloat(r.lon) });
+  function pickResult(result: NominatimResult) {
+    setDraftStart({ lat: parseFloat(result.lat), lng: parseFloat(result.lon) });
     setAccuracy(null);
     setResults([]);
     setSearch('');
@@ -112,97 +113,149 @@ export default function NewRouteScreen() {
     }
   }
 
+  const startLabel = draft.start
+    ? `Startpunkt gesetzt${accuracy !== null ? ` · ±${Math.max(1, Math.round(accuracy))} m` : ''}`
+    : 'Startpunkt noch wählen';
+
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-stravaDark"
+      className="flex-1 bg-canvas"
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View className="flex-1">
-        <View className="flex-1 min-h-[200px]">
+        <View className="flex-1 bg-surface">
           <Map route={draft.coords} startPoint={draft.start} onMapPress={setDraftStart} />
+          <View className="absolute left-4 right-4 top-4 rounded-2xl border border-line bg-canvas/95 px-4 py-3">
+            <Text className="text-[10px] tracking-[1.6px] font-sans-bold text-muted">ROUTENPLANER</Text>
+            <Text className="mt-1 text-sm font-sans-semibold text-white">Tippe auf die Karte, um einen Startpunkt zu setzen.</Text>
+          </View>
         </View>
 
-        <View className="p-4 border-t gap-3 bg-stravaCard border-stravaBorder">
-          <View className="flex-row items-center gap-2">
-            <TextInput
-              className="flex-1 border rounded-xl px-4 py-2.5 text-base border-stravaBorder bg-stravaDark text-white placeholder:text-stravaMuted"
-              value={search}
-              onChangeText={setSearch}
-              onSubmitEditing={handleSearch}
-              returnKeyType="search"
-              placeholder="Ort oder Adresse suchen (z. B. Dreikirchen)"
-            />
-            <Pressable
-              className="rounded-xl px-4 py-2.5 items-center active:opacity-80 bg-gray-800"
-              onPress={handleSearch}
-              disabled={searching}
-            >
-              {searching ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text className="text-white font-sans-semibold">Suchen</Text>
-              )}
-            </Pressable>
-          </View>
-
-          {results.length > 0 && (
-            <View className="gap-1">
-              {results.map(r => (
-                <Pressable
-                  key={r.place_id}
-                  className="rounded-lg px-3 py-2 active:opacity-70 bg-stravaDark"
-                  onPress={() => pickResult(r)}
-                >
-                  <Text className="text-sm text-gray-200" numberOfLines={1}>
-                    {r.display_name}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          )}
-
-          <Text className="text-sm text-stravaMuted">
-            {draft.start
-              ? `Startpunkt: ${draft.start.lat.toFixed(5)}, ${draft.start.lng.toFixed(5)}` +
-                (accuracy !== null
-                  ? ` · Genauigkeit ±${Math.max(1, Math.round(accuracy))} m`
-                  : '') +
-                ' – tippe auf die Karte, um ihn zu ändern.'
-              : 'Startpunkt wählen: Adresse suchen, auf die Karte tippen oder deine Position nutzen.'}
-          </Text>
-
-          <Pressable
-            className="rounded-xl py-3 items-center active:opacity-80 bg-gray-800"
-            onPress={useMyLocation}
-            disabled={locating}
+        <View className="-mt-6 max-h-[68%] rounded-t-[32px] border-t border-line bg-canvas">
+          <ScrollView
+            contentContainerClassName="px-5 pb-7 pt-5"
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            <Text className="font-sans-semibold text-white">
-              {locating ? 'Position wird ermittelt…' : 'Aktuelle Position verwenden'}
-            </Text>
-          </Pressable>
+            <View className="self-center h-1.5 w-10 rounded-full bg-surface-soft" />
+            <View className="mt-5 flex-row items-start justify-between gap-4">
+              <View className="flex-1">
+                <Text className="text-2xl font-display text-white">Plane deine Runde</Text>
+                <Text className="mt-1 text-sm leading-5 text-muted">
+                  Wähle einen Startpunkt und die Strecke, die heute zu dir passt.
+                </Text>
+              </View>
+              <View className={`mt-1 rounded-full px-3 py-1.5 ${draft.start ? 'bg-lime' : 'bg-surface-soft'}`}>
+                <Text className={`text-[10px] tracking-[1px] font-sans-bold ${draft.start ? 'text-ink' : 'text-muted'}`}>
+                  {draft.start ? 'BEREIT' : 'SCHRITT 1'}
+                </Text>
+              </View>
+            </View>
 
-          <View className="flex-row items-center gap-3">
-            <TextInput
-              className="flex-1 border rounded-xl px-4 py-3 text-base border-stravaBorder bg-stravaDark text-white placeholder:text-stravaMuted"
-              value={kmText}
-              onChangeText={setKmText}
-              keyboardType="decimal-pad"
-              placeholder="Distanz"
-              inputMode="decimal"
-            />
-            <Text className="font-sans-medium text-stravaMuted">km</Text>
+            <View className="mt-5 rounded-2xl border border-line bg-surface p-3">
+              <View className="flex-row items-center gap-2">
+                <TextInput
+                  className="flex-1 px-2 py-2.5 text-[15px] text-white"
+                  value={search}
+                  onChangeText={setSearch}
+                  onSubmitEditing={handleSearch}
+                  returnKeyType="search"
+                  placeholder="Ort oder Adresse suchen"
+                  placeholderTextColor="#6E6E74"
+                  accessibilityLabel="Ort oder Adresse suchen"
+                />
+                <Pressable
+                  className="rounded-xl bg-surface-soft px-4 py-2.5 active:opacity-75"
+                  onPress={handleSearch}
+                  disabled={searching}
+                >
+                  {searching ? <ActivityIndicator color="#FFFFFF" /> : <Text className="font-sans-bold text-white">Suchen</Text>}
+                </Pressable>
+              </View>
+              {results.length > 0 && (
+                <View className="mt-2 border-t border-line pt-2">
+                  {results.map(result => (
+                    <Pressable
+                      key={result.place_id}
+                      className="rounded-xl px-3 py-3 active:bg-surface-soft"
+                      onPress={() => pickResult(result)}
+                    >
+                      <Text className="text-sm leading-5 text-white" numberOfLines={2}>
+                        {result.display_name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            <View className="mt-3 flex-row items-center justify-between rounded-2xl border border-line bg-surface px-4 py-3">
+              <View className="flex-1 pr-3">
+                <Text className="text-sm font-sans-semibold text-white">{startLabel}</Text>
+                <Text className="mt-0.5 text-xs text-muted" numberOfLines={1}>
+                  {draft.start
+                    ? `${draft.start.lat.toFixed(5)}, ${draft.start.lng.toFixed(5)}`
+                    : 'Adresse suchen, Karte antippen oder Standort verwenden.'}
+                </Text>
+              </View>
+              <Pressable
+                className="rounded-xl bg-surface-soft px-3 py-2 active:opacity-75"
+                onPress={useMyLocation}
+                disabled={locating}
+              >
+                {locating ? <ActivityIndicator color="#D8FF39" /> : <Text className="text-xs font-sans-bold text-lime">Mein Standort</Text>}
+              </Pressable>
+            </View>
+
+            <View className="mt-6">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-base font-sans-semibold text-white">Wie weit möchtest du laufen?</Text>
+                <Text className="text-xs text-muted">Schritt 2</Text>
+              </View>
+              <View className="mt-3 flex-row gap-2">
+                {DISTANCE_PRESETS.map(preset => {
+                  const active = kmText.replace(',', '.') === preset;
+                  return (
+                    <Pressable
+                      key={preset}
+                      className={`flex-1 items-center rounded-xl border py-3 active:opacity-75 ${active ? 'border-lime bg-lime' : 'border-line bg-surface'}`}
+                      onPress={() => setKmText(preset)}
+                    >
+                      <Text className={`text-sm font-sans-bold ${active ? 'text-ink' : 'text-white'}`}>{preset} km</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <View className="mt-3 flex-row items-center rounded-2xl border border-line bg-surface px-4">
+                <Text className="text-[10px] tracking-[1.4px] font-sans-bold text-faint">EIGENE DISTANZ</Text>
+                <TextInput
+                  className="flex-1 px-3 py-4 text-lg font-display text-white"
+                  value={kmText}
+                  onChangeText={setKmText}
+                  keyboardType="decimal-pad"
+                  inputMode="decimal"
+                  placeholder="5"
+                  placeholderTextColor="#6E6E74"
+                  accessibilityLabel="Eigene Distanz in Kilometern"
+                />
+                <Text className="text-sm font-sans-semibold text-muted">km</Text>
+              </View>
+            </View>
+
             <Pressable
-              className="bg-strava rounded-xl px-6 py-3 items-center active:opacity-80"
+              className={`mt-5 items-center rounded-2xl py-4 active:opacity-85 ${draft.start ? 'bg-lime' : 'bg-surface-soft'}`}
               onPress={handleGenerate}
               disabled={generating}
             >
               {generating ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color="#080808" />
               ) : (
-                <Text className="text-white font-sans-bold text-base">Route generieren</Text>
+                <Text className={`text-[15px] font-sans-bold ${draft.start ? 'text-ink' : 'text-faint'}`}>
+                  Route erstellen →
+                </Text>
               )}
             </Pressable>
-          </View>
+          </ScrollView>
         </View>
       </View>
     </KeyboardAvoidingView>

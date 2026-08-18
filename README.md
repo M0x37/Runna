@@ -3,7 +3,12 @@
 Single-User-App zum Planen von Laufstrecken: Startpunkt + Distanz eingeben, die App
 generiert über die [openrouteservice](https://openrouteservice.org)-API (`foot-walking`,
 `round_trip`) eine Rundstrecke, die nur für Fußgänger geeignete Wege nutzt. Die Route wird
-auf einer Karte angezeigt und lokal gespeichert.
+auf einer Karte angezeigt und in Supabase gespeichert.
+
+**Features:** Routen-Planer mit Karte, Schnellstart („Los geht's – von hier aus": GPS-Position
++ Distanz, Route wird sofort generiert), Live-Lauf-Modus mit GPS (Karte folgt, Abweichung von
+der Route), Höhenprofil (open-meteo), Favoriten, Route teilen (Web Share/GPX, native Teilen),
+GPX-Export.
 
 Läuft aus **einer** Expo-Codebasis als Website (PC) und als Android-APK.
 
@@ -36,7 +41,8 @@ cp .env.example .env   # ORS-Key + Supabase-Zugangsdaten eintragen
 1. Konto auf https://supabase.com erstellen (kostenlos, keine Kreditkarte) → **New project**.
 2. In Project Settings → **API** die `Project URL` und den `anon public`-Key in die `.env` eintragen.
 3. Im **SQL Editor** den Inhalt von `supabase/schema.sql` ausführen (legt die Tabelle `routes`
-   samt Zugriffsregeln an).
+   samt Zugriffsregeln an). Bei Bestandsinstallationen (Tabelle existiert schon) zusätzlich
+   `supabase/migration-favorite.sql` ausführen (Favoriten-Spalte).
 
 Ohne `EXPO_PUBLIC_ORS_KEY` zeigt die App eine verständliche Fehlermeldung.
 Für die Karten selbst wird kein Key benötigt.
@@ -76,27 +82,34 @@ Für den Android-Build wird ein EAS-Account benötigt (`npx eas-cli login`).
 - **Kein Expo Go:** MapLibre ist ein nativer Modul und läuft nicht in Expo Go –
   getestet wird über einen Development Build (`eas build --profile development`)
   oder direkt das Preview-APK.
-- Kein Login, kein Live-Tracking: Routen liegen in einer Supabase-Datenbank (kostenloser
-  Plan). Für eine rein private App reicht das; bei öffentlicher Verteilung besser Login +
+- Kein Login: Routen liegen in einer Supabase-Datenbank (kostenloser Plan). Für eine rein
+  private App reicht das; bei öffentlicher Verteilung besser Login +
   Row-Level-Security ergänzen (Schema dafür in `supabase/schema.sql` vorbereitet).
 - Der openrouteservice-Key liegt im Client – für eine rein private App okay; für
   öffentliche Verteilung besser über eine Serverless-Function proxyen (siehe plan.md).
-- GPX-Export ist bewusst nur im Web verfügbar (Download in Strava/Garmin importierbar).
+- GPX-Export ist bewusst nur im Web verfügbar (Download in Strava/Garmin importierbar);
+  Teilen funktioniert auf Android über das native Share-Menü.
+- Live-Lauf-Modus: Standort wird lokal verarbeitet, es werden keine Positionsdaten
+  gespeichert oder übertragen.
 
 ## Struktur
 
 ```
 src/
   app/
-    index.tsx              # Liste gespeicherter Routen
+    index.tsx              # Liste gespeicherter Routen + Schnellstart (GPS)
     new-route.tsx          # Startpunkt wählen + km eingeben + generieren
-    route/[id].tsx         # Kartenansicht, speichern/löschen/neu generieren, GPX-Export (Web)
+    route/[id].tsx         # Karte, speichern/löschen/neu generieren, GPX (Web),
+                           # Live-Lauf-Modus, Höhenprofil, Favoriten, Teilen
   components/
     Map/                   # Plattform-Split (native/web)
     RouteCard.tsx
+    ElevationChart.tsx     # Höhenprofil-Balkendiagramm
   lib/
-    routing.ts             # openrouteservice-Anbindung
+    routing.ts             # openrouteservice-Anbindung (Multi-Seed-Scoring)
     storage.ts             # Supabase-Helper (Tabelle 'routes')
+    elevation.ts           # Höhenprofil via open-meteo
+    geo.ts                 # Punkt-zu-Route-Distanz (Live-Modus)
     gpx.ts                 # GPX-Export
   stores/
     useRouteStore.ts       # Zustand (Draft der zu generierenden Route)

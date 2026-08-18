@@ -30,15 +30,18 @@ export default function RootLayout() {
       <StatusBar style="light" />
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: '#000000' },
-          headerTintColor: '#ffffff',
-          headerTitleStyle: { fontFamily: 'Archivo_700Bold' },
+          headerStyle: { backgroundColor: '#0D0D0E' },
+          headerTintColor: '#FFFFFF',
+          headerTitleStyle: { fontFamily: 'Archivo_700Bold', fontSize: 17 },
+          headerTitleAlign: 'left',
+          headerShadowVisible: false,
           headerBackButtonDisplayMode: 'minimal',
+          contentStyle: { backgroundColor: '#0D0D0E' },
         }}
       >
-        <Stack.Screen name="index" options={{ title: 'Runna' }} />
-        <Stack.Screen name="new-route" options={{ title: 'Neue Route' }} />
-        <Stack.Screen name="route/[id]" options={{ title: 'Route' }} />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="new-route" options={{ title: 'Route planen' }} />
+        <Stack.Screen name="route/[id]" options={{ title: 'Deine Route' }} />
       </Stack>
     </>
   );

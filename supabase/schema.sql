@@ -8,7 +8,8 @@ create table if not exists public.routes (
   start_lat double precision not null,
   start_lng double precision not null,
   coords jsonb not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  favorite boolean not null default false
 );
 
 alter table public.routes enable row level security;

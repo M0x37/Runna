@@ -9,6 +9,7 @@ interface RouteRow {
   start_lng: number;
   coords: LatLng[];
   created_at: string;
+  favorite: boolean;
 }
 
 function notConfigured(): never {
@@ -25,6 +26,7 @@ function toRoute(row: RouteRow): SavedRoute {
     createdAt: row.created_at,
     start: { lat: row.start_lat, lng: row.start_lng },
     coords: row.coords,
+    favorite: Boolean(row.favorite),
   };
 }
 
@@ -35,7 +37,12 @@ export async function loadRoutes(): Promise<SavedRoute[]> {
     .select('*')
     .order('created_at', { ascending: false });
   if (error) throw new Error(`Supabase Fehler: ${error.message}`);
-  return (data ?? []).map(toRoute);
+  const routes = (data ?? []).map(toRoute);
+  routes.sort((a, b) => {
+    if (a.favorite !== b.favorite) return a.favorite ? -1 : 1;
+    return b.createdAt.localeCompare(a.createdAt);
+  });
+  return routes;
 }
 
 export async function saveRoute(route: SavedRoute) {
@@ -48,6 +55,7 @@ export async function saveRoute(route: SavedRoute) {
     start_lng: route.start.lng,
     coords: route.coords,
     created_at: route.createdAt,
+    favorite: Boolean(route.favorite),
   });
   if (error) throw new Error(`Supabase Fehler: ${error.message}`);
 }
@@ -55,5 +63,11 @@ export async function saveRoute(route: SavedRoute) {
 export async function deleteRoute(id: string) {
   if (!isSupabaseConfigured) notConfigured();
   const { error } = await supabase.from('routes').delete().eq('id', id);
+  if (error) throw new Error(`Supabase Fehler: ${error.message}`);
+}
+
+export async function toggleRouteFavorite(id: string, favorite: boolean) {
+  if (!isSupabaseConfigured) notConfigured();
+  const { error } = await supabase.from('routes').update({ favorite }).eq('id', id);
   if (error) throw new Error(`Supabase Fehler: ${error.message}`);
 }
