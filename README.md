@@ -1,116 +1,89 @@
-# Runna – Laufstrecken-Planer
+# Runna
 
-Single-User-App zum Planen von Laufstrecken: Startpunkt + Distanz eingeben, die App
-generiert über die [openrouteservice](https://openrouteservice.org)-API (`foot-walking`,
-`round_trip`) eine Rundstrecke, die nur für Fußgänger geeignete Wege nutzt. Die Route wird
-auf einer Karte angezeigt und in Supabase gespeichert.
+Runna ist eine persönliche Laufstrecken-App für Android und Web. Du kannst Runden planen, auf einer Karte ansehen, speichern und später wieder öffnen. Die App ist für eine eigene Installation mit einem eigenen Supabase-Projekt ausgelegt.
 
-**Features:** Routen-Planer mit Karte, Schnellstart („Los geht's – von hier aus": GPS-Position
-+ Distanz, Route wird sofort generiert), Live-Lauf-Modus mit GPS (Karte folgt, Abweichung von
-der Route), Höhenprofil (open-meteo), Favoriten, Route teilen (Web Share/GPX, native Teilen),
-GPX-Export.
+## Funktionen
 
-Läuft aus **einer** Expo-Codebasis als Website (PC) und als Android-APK.
+- Laufstrecken über Startpunkt und Distanz planen
+- Kartenansicht für Web und Android
+- Routen speichern, favorisieren und wieder öffnen
+- GPS-gestützter Schnellstart und Live-Laufmodus
+- GPX-Export und Teilen von Routen
+- Höhenprofil für geplante Strecken
+- Optionale Fehlerberichte über Sentry
 
-## Kosten
+## Technische Basis
 
-**Alles für immer kostenlos – kein Abo, kein API-Key, keine Kreditkarte:**
+| Bereich | Technologie |
+|---|---|
+| App | Expo, React Native und Expo Router |
+| Web | React Native Web und Leaflet |
+| Android-Karte | MapLibre |
+| Datenbank | Supabase |
+| Routing | openrouteservice |
+| Fehlerberichte | Sentry (optional) |
 
-| Komponente | Lösung | Kosten |
-|---|---|---|
-| Routen-Generierung | openrouteservice (kostenloser Account) | gratis, Tageslimit |
-| Karte Android | MapLibre (Open-Source, BSD) + OpenFreeMap-Kacheln | gratis |
-| Karte Web | Leaflet + OpenStreetMap | gratis |
-| Speicherung | Supabase (kostenloser Plan: 500 MB DB) | gratis, keine Kreditkarte |
+## Voraussetzungen
 
-## Setup
+Installiere eine aktuelle Node.js-LTS-Version, npm sowie Git. Für Android-Builds wird zusätzlich ein Expo-/EAS-Konto benötigt.
+
+## Lokale Einrichtung
 
 ```bash
+git clone https://github.com/M0x37/Runna.git
+cd Runna
 npm install
-cp .env.example .env   # ORS-Key + Supabase-Zugangsdaten eintragen
+cp .env.example .env
 ```
 
-| Variable | Zweck | Bezugsquelle |
-|---|---|---|
-| `EXPO_PUBLIC_ORS_KEY` | openrouteservice-Routen (Round-Trip) | https://openrouteservice.org/dev/dashboard/ (kostenlos) |
-| `EXPO_PUBLIC_SUPABASE_URL` | Supabase-Projekt-URL | Supabase-Dashboard → Project Settings → API |
-| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Supabase-Anon-Key | Supabase-Dashboard → Project Settings → API |
+Trage anschließend deine eigenen Werte in `.env` ein:
 
-### Supabase einrichten
+| Variable | Zweck |
+|---|---|
+| `EXPO_PUBLIC_ORS_KEY` | API-Key für die Streckenberechnung über openrouteservice |
+| `EXPO_PUBLIC_SUPABASE_URL` | URL deines Supabase-Projekts |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Öffentlicher Publishable-/Anon-Key deines Supabase-Projekts |
+| `EXPO_PUBLIC_SENTRY_DSN` | Optionaler DSN für Fehlerberichte |
 
-1. Konto auf https://supabase.com erstellen (kostenlos, keine Kreditkarte) → **New project**.
-2. In Project Settings → **API** die `Project URL` und den `anon public`-Key in die `.env` eintragen.
-3. Im **SQL Editor** den Inhalt von `supabase/schema.sql` ausführen (legt die Tabelle `routes`
-   samt Zugriffsregeln an). Bei Bestandsinstallationen (Tabelle existiert schon) zusätzlich
-   `supabase/migration-favorite.sql` ausführen (Favoriten-Spalte).
+> **Wichtig:** Committe niemals `.env`, Service-Role-Keys, Datenbankpasswörter, private Schlüssel oder `SENTRY_AUTH_TOKEN`. Werte mit dem Präfix `EXPO_PUBLIC_` sind im Client-Build sichtbar und dürfen deshalb nur öffentliche Client-Konfiguration enthalten.
 
-Ohne `EXPO_PUBLIC_ORS_KEY` zeigt die App eine verständliche Fehlermeldung.
-Für die Karten selbst wird kein Key benötigt.
+## Supabase einrichten
+
+1. Erstelle ein eigenes Supabase-Projekt.
+2. Führe den Inhalt von `supabase/schema.sql` im Supabase SQL Editor aus.
+3. Bei einer bestehenden Installation führst du zusätzlich `supabase/migration-favorite.sql` aus.
+4. Übernimm die Projekt-URL und den öffentlichen Publishable-/Anon-Key in deine lokale `.env`.
 
 ## Entwicklung
 
 ```bash
-npm run web        # Web (Metro, http://localhost:8081)
-npx expo start     # Android im Dev-Build (siehe unten; Expo Go funktioniert NICHT, s. Hinweis)
-npm run typecheck
-npm run lint
+npm run web         # Web-Vorschau unter http://localhost:8081
+npm run android     # Android-Entwicklung über Expo
+npm run typecheck   # TypeScript-Prüfung
+npm run lint        # ESLint-Prüfung
 ```
-
-## Karten-Plattform-Split
-
-Metro lädt je Plattform automatisch:
-
-- `src/components/Map/Map.native.tsx` – MapLibre + OpenFreeMap (iOS/Android)
-- `src/components/Map/Map.web.tsx` – `react-leaflet` + OpenStreetMap (Browser)
-
-Import bleibt überall gleich: `import { Map } from '@/components/Map/Map'`.
 
 ## Builds
 
 ```bash
-# Android-APK (Preview-Profil, lokal herunterladbar) – enthält die Karte
-npm run build:android        # entspricht: eas build -p android --profile preview
-
-# Website (statischer Export nach dist/, z. B. auf Vercel/Netlify hosten)
-npm run export:web           # entspricht: npx expo export -p web
+npm run build:android  # Android-APK über das EAS-Profil "preview"
+npm run export:web     # Statischer Web-Export nach dist/
 ```
 
-Für den Android-Build wird ein EAS-Account benötigt (`npx eas-cli login`).
+Für EAS-Builds speicherst du `SENTRY_AUTH_TOKEN` ausschließlich als geheime EAS-Umgebungsvariable. Der Token gehört weder in dieses Repository noch in eine lokale Datei, die committed wird.
 
-## Hinweise
+## Projektstruktur
 
-- **Kein Expo Go:** MapLibre ist ein nativer Modul und läuft nicht in Expo Go –
-  getestet wird über einen Development Build (`eas build --profile development`)
-  oder direkt das Preview-APK.
-- Kein Login: Routen liegen in einer Supabase-Datenbank (kostenloser Plan). Für eine rein
-  private App reicht das; bei öffentlicher Verteilung besser Login +
-  Row-Level-Security ergänzen (Schema dafür in `supabase/schema.sql` vorbereitet).
-- Der openrouteservice-Key liegt im Client – für eine rein private App okay; für
-  öffentliche Verteilung besser über eine Serverless-Function proxyen (siehe plan.md).
-- GPX-Export ist bewusst nur im Web verfügbar (Download in Strava/Garmin importierbar);
-  Teilen funktioniert auf Android über das native Share-Menü.
-- Live-Lauf-Modus: Standort wird lokal verarbeitet, es werden keine Positionsdaten
-  gespeichert oder übertragen.
-
-## Struktur
-
-```
+```text
 src/
-  app/
-    index.tsx              # Liste gespeicherter Routen + Schnellstart (GPS)
-    new-route.tsx          # Startpunkt wählen + km eingeben + generieren
-    route/[id].tsx         # Karte, speichern/löschen/neu generieren, GPX (Web),
-                           # Live-Lauf-Modus, Höhenprofil, Favoriten, Teilen
-  components/
-    Map/                   # Plattform-Split (native/web)
-    RouteCard.tsx
-    ElevationChart.tsx     # Höhenprofil-Balkendiagramm
-  lib/
-    routing.ts             # openrouteservice-Anbindung (Multi-Seed-Scoring)
-    storage.ts             # Supabase-Helper (Tabelle 'routes')
-    elevation.ts           # Höhenprofil via open-meteo
-    geo.ts                 # Punkt-zu-Route-Distanz (Live-Modus)
-    gpx.ts                 # GPX-Export
-  stores/
-    useRouteStore.ts       # Zustand (Draft der zu generierenden Route)
+  app/                 Expo-Router-Seiten
+  components/          Wiederverwendbare UI- und Kartenkomponenten
+  lib/                 Supabase-, Routing-, GPS- und GPX-Helfer
+  stores/              Lokaler Routenstatus
+supabase/              Datenbankschema und Migrationen
+assets/                App-Icons und grafische Ressourcen
 ```
+
+## Veröffentlichungshinweise
+
+Dieses Repository enthält bewusst keine Zugangsdaten und keine produktive Datenbank. Wenn du deine eigene Version verteilst, überprüfe die Supabase-Richtlinien und den Schutz deiner Routing-API-Zugangsdaten. Für eine Mehrbenutzer-App solltest du Authentifizierung und restriktive Row-Level-Security ergänzen.
