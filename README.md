@@ -87,3 +87,7 @@ assets/                App-Icons und grafische Ressourcen
 ## Veröffentlichungshinweise
 
 Dieses Repository enthält bewusst keine Zugangsdaten und keine produktive Datenbank. Wenn du deine eigene Version verteilst, überprüfe die Supabase-Richtlinien und den Schutz deiner Routing-API-Zugangsdaten. Für eine Mehrbenutzer-App solltest du Authentifizierung und restriktive Row-Level-Security ergänzen.
+
+## Lizenz
+
+Runna steht unter der **PolyForm Noncommercial License 1.0.0**. Du darfst den Code für nicht-kommerzielle Zwecke nutzen, kopieren, verändern und weitergeben. Eine kommerzielle Nutzung, einschließlich Verkauf oder kostenpflichtiger Bereitstellung, ist nicht erlaubt. Die vollständigen Bedingungen und der erforderliche Urheberhinweis stehen in [`LICENSE`](./LICENSE).

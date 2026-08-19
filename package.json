@@ -2,6 +2,7 @@
   "name": "laufstrecken",
   "main": "expo-router/entry",
   "version": "1.0.0",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "dependencies": {
     "@expo-google-fonts/archivo": "^0.4.2",
     "@expo-google-fonts/inter": "^0.4.2",
