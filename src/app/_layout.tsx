@@ -1,14 +1,29 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { isRunningInExpoGo } from 'expo';
+import * as Sentry from '@sentry/react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, Archivo_600SemiBold, Archivo_700Bold, Archivo_800ExtraBold } from '@expo-google-fonts/archivo';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { useEffect } from 'react';
 import '../global.css';
 
+Sentry.init({
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  enabled: Boolean(process.env.EXPO_PUBLIC_SENTRY_DSN),
+  sendDefaultPii: false,
+  tracesSampleRate: __DEV__ ? 1.0 : 0.2,
+  integrations: [
+    Sentry.expoRouterIntegration({
+      enableTimeToInitialDisplay: !isRunningInExpoGo(),
+    }),
+  ],
+  enableNativeFramesTracking: !isRunningInExpoGo(),
+});
+
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-export default function RootLayout() {
+function RootLayout() {
   const [fontsLoaded] = useFonts({
     Archivo_600SemiBold,
     Archivo_700Bold,
@@ -46,3 +61,5 @@ export default function RootLayout() {
     </>
   );
 }
+
+export default Sentry.wrap(RootLayout);

@@ -45,7 +45,15 @@
           "locationWhenInUsePermission": "Dein Standort wird nur einmalig verwendet, um einen Startpunkt für deine Laufroute vorzuschlagen."
         }
       ],
-      "@maplibre/maplibre-react-native"
+      "@maplibre/maplibre-react-native",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "organization": "m0x",
+          "project": "runna"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
