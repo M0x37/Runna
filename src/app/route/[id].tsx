@@ -307,8 +307,17 @@ export default function RouteScreen() {
             {isPreview ? 'ROUTENVORSCHLAG' : `${distanceLabel.toUpperCase()} KM`}
           </Text>
         </View>
+        <Pressable
+          className="absolute right-4 top-4 flex-row items-center rounded-full border border-line bg-canvas/95 px-3.5 py-2.5 active:opacity-75"
+          onPress={() => router.replace('/')}
+          accessibilityRole="button"
+          accessibilityLabel="Zur Startseite"
+        >
+          <Text className="mr-1.5 text-base font-sans-bold text-white">‹</Text>
+          <Text className="text-xs font-sans-bold text-white">Start</Text>
+        </Pressable>
         {running && (
-          <View className="absolute right-4 top-4 rounded-full bg-lime px-3 py-2">
+          <View className="absolute right-4 top-16 rounded-full bg-lime px-3 py-2">
             <Text className="text-[10px] tracking-[1px] font-sans-bold text-ink">LIVE-LAUF</Text>
           </View>
         )}

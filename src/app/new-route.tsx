@@ -125,7 +125,16 @@ export default function NewRouteScreen() {
       <View className="flex-1">
         <View className="flex-1 bg-surface">
           <Map route={draft.coords} startPoint={draft.start} onMapPress={setDraftStart} />
-          <View className="absolute left-4 right-4 top-4 rounded-2xl border border-line bg-canvas/95 px-4 py-3">
+          <Pressable
+            className="absolute left-4 top-4 flex-row items-center rounded-full border border-line bg-canvas/95 px-3.5 py-2.5 active:opacity-75"
+            onPress={() => router.replace('/')}
+            accessibilityRole="button"
+            accessibilityLabel="Zur Startseite"
+          >
+            <Text className="mr-1.5 text-base font-sans-bold text-white">‹</Text>
+            <Text className="text-xs font-sans-bold text-white">Start</Text>
+          </Pressable>
+          <View className="absolute left-4 right-4 top-16 rounded-2xl border border-line bg-canvas/95 px-4 py-3">
             <Text className="text-[10px] tracking-[1.6px] font-sans-bold text-muted">ROUTENPLANER</Text>
             <Text className="mt-1 text-sm font-sans-semibold text-white">Tippe auf die Karte, um einen Startpunkt zu setzen.</Text>
           </View>
@@ -161,7 +170,7 @@ export default function NewRouteScreen() {
                   onSubmitEditing={handleSearch}
                   returnKeyType="search"
                   placeholder="Ort oder Adresse suchen"
-                  placeholderTextColor="#6E6E74"
+                  placeholderTextColor="#7593A0"
                   accessibilityLabel="Ort oder Adresse suchen"
                 />
                 <Pressable
@@ -203,7 +212,7 @@ export default function NewRouteScreen() {
                 onPress={useMyLocation}
                 disabled={locating}
               >
-                {locating ? <ActivityIndicator color="#D8FF39" /> : <Text className="text-xs font-sans-bold text-lime">Mein Standort</Text>}
+                {locating ? <ActivityIndicator color="#FF684A" /> : <Text className="text-xs font-sans-bold text-lime">Mein Standort</Text>}
               </Pressable>
             </View>
 
@@ -235,7 +244,7 @@ export default function NewRouteScreen() {
                   keyboardType="decimal-pad"
                   inputMode="decimal"
                   placeholder="5"
-                  placeholderTextColor="#6E6E74"
+                  placeholderTextColor="#7593A0"
                   accessibilityLabel="Eigene Distanz in Kilometern"
                 />
                 <Text className="text-sm font-sans-semibold text-muted">km</Text>
@@ -248,7 +257,7 @@ export default function NewRouteScreen() {
               disabled={generating}
             >
               {generating ? (
-                <ActivityIndicator color="#080808" />
+                <ActivityIndicator color="#071A2C" />
               ) : (
                 <Text className={`text-[15px] font-sans-bold ${draft.start ? 'text-ink' : 'text-faint'}`}>
                   Route erstellen →

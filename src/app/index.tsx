@@ -135,7 +135,7 @@ export default function HomeScreen() {
                   keyboardType="numeric"
                   inputMode="decimal"
                   placeholder="5"
-                  placeholderTextColor="#6E6E74"
+                  placeholderTextColor="#7593A0"
                   accessibilityLabel="Distanz in Kilometern"
                 />
                 <Text className="pb-2 text-xs text-muted">Kilometer</Text>
@@ -147,7 +147,7 @@ export default function HomeScreen() {
                 accessibilityLabel="Route generieren"
               >
                 {quickGenerating ? (
-                  <ActivityIndicator color="#080808" />
+                  <ActivityIndicator color="#071A2C" />
                 ) : (
                   <>
                     <Text className="text-lg font-display text-ink">Los</Text>
